@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Tự động nộp bài</title>
+  <style>
+    body {
+      display: flex;
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 0;
+      height: 100vh;
+    }
+    .left, .right {
+      flex: 1;
+      padding: 20px;
+      overflow-y: auto;
+    }
+    h2 {
+      margin-top: 20px;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 10px;
+    }
+    th, td {
+      padding: 8px;
+      border: 1px solid #ccc;
+      text-align: left;
+    }
+    th {
+      background-color: #f0f0f0;
+    }
+    .right {
+      background-color: #f9f9f9;
+      border-left: 1px solid #ddd;
+    }
+  </style>
+</head>
+<body>
+  <div class="left">
+    <h1>Import file code sinh viên</h1>
+    <input type="file" id="fileInput" multiple accept=".cpp"><br><br>
+    <button onclick="upload()">Upload</button>
+    <button onclick="run()">Chạy nộp bài</button>
+    <pre id="result"></pre>
+
+    <table id="resultTable">
+      <thead>
+        <tr>
+          <th>File</th>
+          <th>Điểm</th>
+          <th>Submission ID</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+  </div>
+
+  <div class="right">
+    <h2 style="display: flex;align-items: center; justify-content: center;">ketqua.csv:</h2>
+    <table id="csvTable">
+      <thead>
+        <tr>
+          <th>File</th>
+          <th>Submission ID</th>
+          <th>Điểm</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+  </div>
+
+  <script>
+    async function upload() {
+      const files = document.getElementById('fileInput').files;
+      const formData = new FormData();
+      for (const f of files) formData.append('codeFiles', f);
+      const res = await fetch('/upload', { method: 'POST', body: formData });
+      const data = await res.json();
+      document.getElementById('result').innerText = 'Upload xong: \n' + data.files.join('\n');
+    }
+
+    async function run() {
+      const res = await fetch('/run', { method: 'POST' });
+      const data = await res.json();
+      const tbody = document.querySelector('#resultTable tbody');
+      tbody.innerHTML = '';
+      data.results.forEach(r => {
+        const row = document.createElement('tr');
+        row.innerHTML = `<td>${r.file}</td><td>${r.score}</td><td>${r.subId}</td>`;
+        tbody.appendChild(row);
+      });
+      loadCsv(); 
+    }
+
+    async function loadCsv() {
+      const res = await fetch('/ketqua.csv');
+      const text = await res.text();
+      const lines = text.trim().split('\n');
+      const tbody = document.querySelector('#csvTable tbody');
+      tbody.innerHTML = '';
+      lines.forEach(line => {
+        const [msv, subId, score, filename] = line.split(',');
+        const row = document.createElement('tr');
+        row.innerHTML = `<td>${filename}</td><td>${subId}</td><td>${score}</td>`;
+        tbody.appendChild(row);
+      });
+    }
+
+    window.onload = loadCsv;
+  </script>
+</body>
+</html>
